@@ -46,11 +46,9 @@ List<ProductType> productTypes = new List<ProductType>()
     }
 };
 
-string greeting = @"Welcome to Brass & Poem!
-The only place for poetry books and brass instruments.";
-
 void DisplayMenu()
 {
+    string greeting = "Welcome to Brass & Poem!";
     string choice = null;
     while (choice != "5")
     {
@@ -66,22 +64,22 @@ void DisplayMenu()
         switch (choice)
         {
             case "1":
-                DisplayAllProducts(products, productTypes);
+                DisplayAllProducts();
                 break;
             case "2":
-                DeleteProduct(products, productTypes);
+                DeleteProduct();
                 break;
             case "3":
-                AddProduct(products, productTypes);
+                AddProduct();
                 break;
             case "4":
-                UpdateProduct(products, productTypes);
+                UpdateProduct();
                 break;
             case "5":
-                Console.WriteLine("Goodbye!");
+                Console.WriteLine("\nGoodbye!");
                 break;
             default:
-                Console.WriteLine("Invalid choice. Please choose a valid option.");
+                Console.WriteLine("\nInvalid choice. Please choose a valid option.");
                 break;
         }
         if (choice != "5")
@@ -93,113 +91,128 @@ void DisplayMenu()
 }
 DisplayMenu();
 
-void DisplayAllProducts(List<Product> products, List<ProductType> productTypes)
+void DisplayAllProducts()
 {
-    Console.WriteLine("All products: ");
+    Console.WriteLine("\nAll products: \n");
 
-    for (int i = 0; i < products.Count; i++)
-    {
-        var productType = productTypes.FirstOrDefault(pt => pt.Id == products[i].ProductTypeId);
-        Console.WriteLine($"{i + 1}. {productType.Title}: {products[i].Name} - ${products[i].Price}");
-    }
+    var productList = products
+        .Join(productTypes,
+            product => product.ProductTypeId,
+            productType => productType.Id,
+            (product, productType) => new { Product = product, ProductType = productType })
+        .Select((p, index) => new
+        {
+            Index = index + 1,
+            ProductName = p.Product.Name,
+            ProductTypeTitle = p.ProductType.Title,
+            Price = p.Product.Price
+        })
+        .ToList();
+
+    productList.ForEach(p =>
+        Console.WriteLine($"{p.Index}. {p.ProductTypeTitle}: {p.ProductName} - ${p.Price}"));
 }
 
-void DeleteProduct(List<Product> products, List<ProductType> productTypes)
+void DeleteProduct()
 {
-    DisplayAllProducts(products, productTypes);
+    DisplayAllProducts();
 
-    Console.Write("Enter the number of the product you want to delete: ");
+    Console.Write("\nEnter the number of the product you want to delete: ");
     if (int.TryParse(Console.ReadLine(), out int productIndex) && productIndex > 0 && productIndex <= products.Count)
     {
+        var product = products.ElementAt(productIndex - 1);
         products.RemoveAt(productIndex - 1);
-        Console.WriteLine("The selected product has been deleted.");
+        Console.WriteLine($"\n{product.Name} has been deleted.");
     }
     else
     {
-        Console.WriteLine("Invalid input. Please make a valid selection.");
+        Console.WriteLine("\nInvalid input. Please make a valid selection.");
     }
 }
 
-void AddProduct(List<Product> products, List<ProductType> productTypes)
+void AddProduct()
 {
-    Console.WriteLine("Enter product details:");
+    Console.WriteLine("\nEnter product details: ");
 
-    Console.Write("Name: ");
+    Console.Write("\nName: ");
     string name = Console.ReadLine();
 
-    Console.Write("Price: ");
+    Console.Write("\nPrice: ");
     decimal price;
     while (!decimal.TryParse(Console.ReadLine(), out price) || price <= 0)
     {
-        Console.WriteLine("Invalid input. Price must be a positive number.");
-        Console.Write("Price: ");
+        Console.WriteLine("\nInvalid input. Price must be a positive number.");
+        Console.Write("\nPrice: ");
     }
 
-    Console.WriteLine("Select product type: ");
-    for (int i = 0; i < productTypes.Count; i++)
+    Console.WriteLine("\nSelect product type: ");
+    foreach (var productType in productTypes)
     {
-        Console.WriteLine($"{productTypes[i].Id}. {productTypes[i].Title}");
+        Console.WriteLine($"{productType.Id}. {productType.Title}");
     }
 
     int productTypeId;
     while (!int.TryParse(Console.ReadLine(), out productTypeId) || !productTypes.Any(pt => pt.Id == productTypeId))
     {
-        Console.WriteLine("Invalid input. Please make a valid selection.");
+        Console.WriteLine("\nInvalid input. Please make a valid selection.");
     }
 
-    Product newProduct = new Product()
+    products.Add(new Product
     {
         Name = name,
         Price = price,
-        ProductTypeId = productTypeId,
-    };
+        ProductTypeId = productTypeId
+    });
 
-    products.Add(newProduct);
-    Console.WriteLine("Product added successfully.");
+    Console.WriteLine("\nProduct added successfully.");
 }
 
-void UpdateProduct(List<Product> products, List<ProductType> productTypes)
+void UpdateProduct()
 {
-    DisplayAllProducts(products, productTypes);
+    DisplayAllProducts();
 
-    Console.Write("Enter the number of the product you want to update: ");
+    Console.Write("\nEnter the number of the product you want to update: ");
     if (int.TryParse(Console.ReadLine(), out int index) && index > 0 && index <= products.Count)
     {
         var product = products[index - 1];
 
-        Console.Write($"Enter new name for '{product.Name}' (or press enter to leave unchanged): ");
+        Console.Write($"\nEnter new name for '{product.Name}' (or press enter to leave unchanged): ");
         string newName = Console.ReadLine();
         if (!string.IsNullOrEmpty(newName))
         {
             product.Name = newName;
         }
 
-        Console.Write($"Enter new price for '{product.Name}' (or press enter to leave unchanged): ");
+        Console.Write($"\nEnter new price for '{product.Name}' (or press enter to leave unchanged): ");
         string newPriceInput = Console.ReadLine();
         if (decimal.TryParse(newPriceInput, out decimal newPrice))
         {
             product.Price = newPrice;
         }
 
-        Console.WriteLine("Select new product type: ");
-        for (int i = 0; i < productTypes.Count; i++)
-        {
-            Console.WriteLine($"{i + 1}. {productTypes[i].Title}");
-        }
-        Console.Write("Enter the number of the new product type (or press enter to leave unchanged): ");
+        Console.WriteLine("\nSelect new product type: ");
+        var productTypeOptions = productTypes
+            .Select((pt, i) => new { Index = i + 1, ProductType = pt })
+            .ToList();
+        productTypeOptions.ForEach(option =>
+            Console.WriteLine($"{option.Index}. {option.ProductType.Title}"));
+
+        Console.Write("\nEnter the number of the new product type (or press enter to leave unchanged): ");
         string newProductTypeInput = Console.ReadLine();
-        if (int.TryParse(newProductTypeInput, out int newProductTypeIndex) && newProductTypeIndex > 0 && newProductTypeIndex <= productTypes.Count)
+        if (int.TryParse(newProductTypeInput, out int newProductTypeIndex) &&
+            productTypeOptions.Any(option => option.Index == newProductTypeIndex))
         {
-            product.ProductTypeId = productTypes[newProductTypeIndex - 1].Id;
+            product.ProductTypeId = productTypeOptions
+                .First(option => option.Index == newProductTypeIndex)
+                .ProductType.Id;
         }
 
-        Console.WriteLine("Product updated successfully.");
+        Console.WriteLine("\nProduct updated successfully.");
     }
     else
     {
-        Console.WriteLine("Invalid choice. No product was updated.");
+        Console.WriteLine("\nInvalid choice. No product was updated.");
     }
 }
 
-// don't move or change this!
 public partial class Program { }
